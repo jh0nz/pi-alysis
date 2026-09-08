@@ -4,7 +4,10 @@ import { setTimeout as delay } from "node:timers/promises";
 // src/constants.ts
 var DEFAULT_SUPABASE_URL = "https://vzigujbcjjmpntxhmyvr.supabase.co";
 var DEFAULT_SITE_URL = "https://alysiscode.com";
-var ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6aWd1amJjamptcG50eGhteXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5Mzc0NTIsImV4cCI6MjA5NjUxMzQ1Mn0." + "vLH9q-BNO8IWIZrVlvCw8pZWXdLgmKG4Tl9toTTD3pg";
+var ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+  "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6aWd1amJjamptcG50eGhteXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5Mzc0NTIsImV4cCI6MjA5NjUxMzQ1Mn0." +
+  "vLH9q-BNO8IWIZrVlvCw8pZWXdLgmKG4Tl9toTTD3pg";
 var PROVIDER_ID = "alysis";
 var PROVIDER_LABEL = "Alysis Code Pro";
 function getSupabaseUrl() {
@@ -46,7 +49,7 @@ function getFunctionHeaders() {
   return {
     "Content-Type": "application/json",
     apikey: ANON_KEY,
-    Authorization: `Bearer ${ANON_KEY}`
+    Authorization: `Bearer ${ANON_KEY}`,
   };
 }
 async function requestDeviceGrant(signal) {
@@ -54,16 +57,18 @@ async function requestDeviceGrant(signal) {
     method: "POST",
     headers: getFunctionHeaders(),
     body: JSON.stringify({
-      client_name: `pi-agent @ ${process.env.HOSTNAME || "localhost"}`
+      client_name: `pi-agent @ ${process.env.HOSTNAME || "localhost"}`,
     }),
-    signal
+    signal,
   });
   if (!codeResponse.ok) {
     let errorText = "";
     try {
       errorText = await codeResponse.text();
     } catch {}
-    throw new Error(`Failed to start authentication flow (${codeResponse.status}): ${errorText || codeResponse.statusText}`);
+    throw new Error(
+      `Failed to start authentication flow (${codeResponse.status}): ${errorText || codeResponse.statusText}`,
+    );
   }
   const grant = await codeResponse.json();
   const userCode = grant.user_code?.trim();
@@ -76,14 +81,17 @@ async function requestDeviceGrant(signal) {
     deviceCode,
     intervalSeconds: Math.max(grant.interval ?? DEFAULT_POLL_INTERVAL_S, 1),
     expiresInSeconds: Math.max(grant.expires_in ?? DEFAULT_TIMEOUT_S, 10),
-    activateUrl: getActivateUrl(userCode)
+    activateUrl: getActivateUrl(userCode),
   };
 }
 async function sleep(ms, signal) {
   try {
     await delay(ms, undefined, { signal });
   } catch (err) {
-    if (signal?.aborted || err instanceof Error && err.name === "AbortError") {
+    if (
+      signal?.aborted ||
+      (err instanceof Error && err.name === "AbortError")
+    ) {
       throw new Error("Login cancelled.");
     }
     throw err;
@@ -98,7 +106,7 @@ async function pollDeviceToken(grant, callbacks, signal) {
         method: "POST",
         headers: getFunctionHeaders(),
         body: JSON.stringify({ device_code: grant.deviceCode }),
-        signal
+        signal,
       });
       if (!tokenResponse.ok) {
         continue;
@@ -108,25 +116,43 @@ async function pollDeviceToken(grant, callbacks, signal) {
       if (status === "approved") {
         const key = body.key?.trim();
         if (!key) {
-          throw new Error("Alysis login service indicated approval but returned no gateway key.");
+          throw new Error(
+            "Alysis login service indicated approval but returned no gateway key.",
+          );
         }
         return key;
       }
       if (status === "denied") {
         throw new Error("Login was rejected on the Alysis website.");
       }
-      if (status === "expired" || status === "not_found" || status === "already_claimed") {
-        throw new Error("Login code expired or already claimed. Run /login alysis again.");
+      if (
+        status === "expired" ||
+        status === "not_found" ||
+        status === "already_claimed"
+      ) {
+        throw new Error(
+          "Login code expired or already claimed. Run /login alysis again.",
+        );
       }
-      const remainingSeconds = Math.max(0, Math.round((deadline - Date.now()) / 1000));
-      callbacks.onProgress?.(`Waiting for approval in browser (${remainingSeconds}s remaining)...`);
+      const remainingSeconds = Math.max(
+        0,
+        Math.round((deadline - Date.now()) / 1000),
+      );
+      callbacks.onProgress?.(
+        `Waiting for approval in browser (${remainingSeconds}s remaining)...`,
+      );
     } catch (err) {
-      if (signal?.aborted || err instanceof Error && err.name === "AbortError") {
+      if (
+        signal?.aborted ||
+        (err instanceof Error && err.name === "AbortError")
+      ) {
         throw new Error("Login cancelled.");
       }
     }
   }
-  throw new Error(`Timed out after ${grant.expiresInSeconds}s waiting for approval at ${getAccountUrl()}. Run /login alysis again.`);
+  throw new Error(
+    `Timed out after ${grant.expiresInSeconds}s waiting for approval at ${getAccountUrl()}. Run /login alysis again.`,
+  );
 }
 async function loginAlysis(callbacks, signal) {
   const grant = await requestDeviceGrant(signal);
@@ -134,7 +160,7 @@ async function loginAlysis(callbacks, signal) {
     userCode: grant.userCode,
     verificationUri: getActivateUrl(),
     intervalSeconds: grant.intervalSeconds,
-    expiresInSeconds: grant.expiresInSeconds
+    expiresInSeconds: grant.expiresInSeconds,
   });
   callbacks.onAuth({ url: grant.activateUrl });
   callbacks.onProgress?.("Waiting for approval in browser...");
@@ -142,34 +168,36 @@ async function loginAlysis(callbacks, signal) {
   return {
     access: accessKey,
     refresh: "",
-    expires: Date.now() + 365 * 24 * 3600 * 1000
+    expires: Date.now() + 365 * 24 * 3600 * 1000,
   };
 }
 
 // src/models.ts
 var DEFAULT_CONTEXT_WINDOW = 1e6;
-var DEFAULT_MAX_TOKENS = 16384;
+var DEFAULT_MAX_TOKENS = 8192;
 var KNOWN_MODEL_METADATA = {
   "deepseek-v4-flash": {
     name: "DeepSeek V4 Flash (Alysis)",
-    description: "Default - fast high-volume coding (1M context, free daily allowance)",
-    vision: true
+    description:
+      "Default - fast high-volume coding (1M context, free daily allowance)",
+    vision: true,
   },
   "deepseek-v4-pro": {
     name: "DeepSeek V4 Pro (Alysis Flagship)",
-    description: "Flagship - deeper reasoning (1M context, requires Alysis Code Pro)",
-    vision: true
+    description:
+      "Flagship - deeper reasoning (1M context, requires Alysis Code Pro)",
+    vision: true,
   },
   "deepseek-v4-flash-vision-exp": {
     name: "DeepSeek V4 Flash Vision Exp (Alysis)",
     description: "Vision preview - image understanding at v4-flash rate",
-    vision: true
+    vision: true,
   },
   "deepseek-v4.1-flash-expires-on-0910": {
     name: "DeepSeek V4.1 Flash Beta (Alysis)",
     description: "V4.1 Flash beta - new architecture, native multimodal",
-    vision: true
-  }
+    vision: true,
+  },
 };
 var STATIC_MODELS = Object.entries(KNOWN_MODEL_METADATA).map(([id, meta]) => ({
   id,
@@ -180,16 +208,22 @@ var STATIC_MODELS = Object.entries(KNOWN_MODEL_METADATA).map(([id, meta]) => ({
   contextWindow: DEFAULT_CONTEXT_WINDOW,
   maxTokens: DEFAULT_MAX_TOKENS,
   compat: {
+    supportsDeveloperRole: false,
+    supportsStore: false,
+    supportsReasoningEffort: false,
+    maxTokensField: "max_tokens",
     thinkingFormat: "deepseek",
-    supportsReasoningEffort: true
-  }
+  },
 }));
 function formatModelDisplayName(modelId) {
   const known = KNOWN_MODEL_METADATA[modelId];
   if (known) {
     return known.name;
   }
-  const formatted = modelId.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  const formatted = modelId
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
   return `${formatted} (Alysis)`;
 }
 function toProviderModelConfig(item) {
@@ -204,25 +238,30 @@ function toProviderModelConfig(item) {
     contextWindow: DEFAULT_CONTEXT_WINDOW,
     maxTokens: DEFAULT_MAX_TOKENS,
     compat: {
+      supportsDeveloperRole: false,
+      supportsStore: false,
+      supportsReasoningEffort: false,
+      maxTokensField: "max_tokens",
       thinkingFormat: "deepseek",
-      supportsReasoningEffort: true
-    }
+    },
   };
 }
 async function fetchDynamicModels(accessKey, signal) {
   const headers = {
-    apikey: ANON_KEY
+    apikey: ANON_KEY,
   };
   if (accessKey) {
     headers.Authorization = `Bearer ${accessKey}`;
   }
   const timeoutSignal = AbortSignal.timeout(6000);
-  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
   try {
     const response = await fetch(getModelsUrl(), {
       method: "GET",
       headers,
-      signal: combinedSignal
+      signal: combinedSignal,
     });
     if (!response.ok) {
       return STATIC_MODELS;
@@ -232,7 +271,7 @@ async function fetchDynamicModels(accessKey, signal) {
     if (!Array.isArray(items) || items.length === 0) {
       return STATIC_MODELS;
     }
-    const seen = new Set;
+    const seen = new Set();
     const models = [];
     for (const item of items) {
       if (!item || typeof item.id !== "string") {
@@ -269,7 +308,7 @@ class AlysisUsageTracker {
   totalCacheWriteTokens = 0;
   totalTurns = 0;
   lastTurnTokens = 0;
-  byModel = new Map;
+  byModel = new Map();
   recordTurn(modelId, usage) {
     if (!usage) {
       return;
@@ -291,7 +330,7 @@ class AlysisUsageTracker {
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
       totalTokens: 0,
-      turns: 0
+      turns: 0,
     };
     currentModelStats.promptTokens += prompt;
     currentModelStats.completionTokens += completion;
@@ -302,7 +341,11 @@ class AlysisUsageTracker {
     this.byModel.set(modelId, currentModelStats);
   }
   getTotalTokens() {
-    return this.totalPromptTokens + this.totalCompletionTokens + this.totalCacheWriteTokens;
+    return (
+      this.totalPromptTokens +
+      this.totalCompletionTokens +
+      this.totalCacheWriteTokens
+    );
   }
   getTurnCount() {
     return this.totalTurns;
@@ -324,16 +367,21 @@ class AlysisUsageTracker {
       "Alysis Usage:",
       `Total Tokens: ${total.toLocaleString()}`,
       `Input Tokens: ${this.totalPromptTokens.toLocaleString()}`,
-      `Output Tokens: ${this.totalCompletionTokens.toLocaleString()}`
+      `Output Tokens: ${this.totalCompletionTokens.toLocaleString()}`,
     ];
     if (this.totalCacheReadTokens > 0 || this.totalCacheWriteTokens > 0) {
-      lines.push(`Cache Read: ${this.totalCacheReadTokens.toLocaleString()}`, `Cache Write: ${this.totalCacheWriteTokens.toLocaleString()}`);
+      lines.push(
+        `Cache Read: ${this.totalCacheReadTokens.toLocaleString()}`,
+        `Cache Write: ${this.totalCacheWriteTokens.toLocaleString()}`,
+      );
     }
     lines.push(`Turns: ${this.totalTurns}`);
     if (this.byModel.size > 0) {
       lines.push("", "By Model:");
       for (const [model, stats] of this.byModel.entries()) {
-        lines.push(`• ${model}: ${stats.totalTokens.toLocaleString()} tokens across ${stats.turns} turn(s) (${stats.promptTokens.toLocaleString()} in, ${stats.completionTokens.toLocaleString()} out)`);
+        lines.push(
+          `• ${model}: ${stats.totalTokens.toLocaleString()} tokens across ${stats.turns} turn(s) (${stats.promptTokens.toLocaleString()} in, ${stats.completionTokens.toLocaleString()} out)`,
+        );
       }
     }
     return lines.join(`
@@ -354,22 +402,33 @@ class AlysisUsageTracker {
 function registerEventListeners(pi, tracker) {
   pi.on("after_provider_response", (event, ctx) => {
     const isAlysisModel = ctx.model?.provider === PROVIDER_ID;
-    const isAlysisGateway = Boolean(event.headers?.["x-alysis-gateway-version"] || event.headers?.["x-alysis-router-version"]);
+    const isAlysisGateway = Boolean(
+      event.headers?.["x-alysis-gateway-version"] ||
+        event.headers?.["x-alysis-router-version"],
+    );
     if (!isAlysisModel && !isAlysisGateway) {
       return;
     }
     if (event.status === 402) {
-      ctx.ui.notify(`Alysis credits exhausted. Add credits at ${getAccountUrl()}`, "error");
+      ctx.ui.notify(
+        `Alysis credits exhausted. Add credits at ${getAccountUrl()}`,
+        "error",
+      );
     } else if (event.status === 429) {
-      ctx.ui.notify(`Alysis rate limit or quota exceeded. Check your account at ${getAccountUrl()}`, "warning");
+      ctx.ui.notify(
+        `Alysis rate limit or quota exceeded. Check your account at ${getAccountUrl()}`,
+        "warning",
+      );
     }
   });
   pi.on("turn_end", (event, ctx) => {
     if (ctx.model?.provider !== PROVIDER_ID) {
       return;
     }
-    const assistantMsg = event.message?.role === "assistant" ? event.message : null;
-    const usage = assistantMsg && "usage" in assistantMsg ? assistantMsg.usage : null;
+    const assistantMsg =
+      event.message?.role === "assistant" ? event.message : null;
+    const usage =
+      assistantMsg && "usage" in assistantMsg ? assistantMsg.usage : null;
     tracker.recordTurn(ctx.model.id, usage);
     ctx.ui.setStatus(PROVIDER_ID, tracker.formatFooterStatus());
   });
@@ -391,7 +450,8 @@ function registerCommands(pi, tracker) {
   pi.registerCommand("alysis", {
     description: "Display Alysis Code Pro status, model, and account links",
     handler: async (_args, ctx) => {
-      const activeModel = ctx.model?.provider === PROVIDER_ID ? ctx.model.id : "None (inactive)";
+      const activeModel =
+        ctx.model?.provider === PROVIDER_ID ? ctx.model.id : "None (inactive)";
       const isConnected = ctx.model?.provider === PROVIDER_ID;
       const totalTokens = tracker.getTotalTokens();
       const turns = tracker.getTurnCount();
@@ -401,18 +461,18 @@ function registerCommands(pi, tracker) {
         `• Model: ${activeModel}`,
         `• Session usage: ${totalTokens.toLocaleString()} tokens (${turns} turns)`,
         `• Account & credits: ${getAccountUrl()}`,
-        `• Activate device: ${getActivateUrl()}`
+        `• Activate device: ${getActivateUrl()}`,
       ].join(`
 `);
       ctx.ui.notify(summary, "info");
-    }
+    },
   });
   pi.registerCommand("alysis-usage", {
     description: "Display token usage for the current session",
     handler: async (_args, ctx) => {
       const text = tracker.formatDetailedMarkdown();
       ctx.ui.notify(text, "info");
-    }
+    },
   });
   pi.registerCommand("alysis-models", {
     description: "Fetch and sync models from the Alysis gateway",
@@ -429,27 +489,35 @@ function registerCommands(pi, tracker) {
           models,
           refreshModels() {
             return fetchDynamicModels();
-          }
+          },
         });
-        const list = models.map((m) => `• ${m.id}: ${m.name}`).join(`
+        const list = models
+          .map((m) => `• ${m.id}: ${m.name}`)
+          .join(`
 `);
-        ctx.ui.notify(`Synced models (${models.length}):
-${list}`, "info");
+        ctx.ui.notify(
+          `Synced models (${models.length}):
+${list}`,
+          "info",
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         ctx.ui.notify(`Failed to fetch models: ${message}`, "error");
       }
-    }
+    },
   });
   pi.registerCommand("alysis-logout", {
     description: "Instructions to logout or revoke active session",
     handler: async (_args, ctx) => {
-      ctx.ui.notify(`To log out locally, run \`/logout ${PROVIDER_ID}\` in Pi. You can also revoke keys at ${getAccountUrl()}`, "info");
-    }
+      ctx.ui.notify(
+        `To log out locally, run \`/logout ${PROVIDER_ID}\` in Pi. You can also revoke keys at ${getAccountUrl()}`,
+        "info",
+      );
+    },
   });
 }
 async function alysisExtension(pi) {
-  const usageTracker = new AlysisUsageTracker;
+  const usageTracker = new AlysisUsageTracker();
   const initialModels = await fetchDynamicModels();
   pi.registerProvider(PROVIDER_ID, {
     name: PROVIDER_LABEL,
@@ -466,12 +534,10 @@ async function alysisExtension(pi) {
       isSubscription: true,
       login: (callbacks) => loginAlysis(callbacks),
       refreshToken: async (credentials) => credentials,
-      getApiKey: (credentials) => credentials.access
-    }
+      getApiKey: (credentials) => credentials.access,
+    },
   });
   registerEventListeners(pi, usageTracker);
   registerCommands(pi, usageTracker);
 }
-export {
-  alysisExtension as default
-};
+export { alysisExtension as default };

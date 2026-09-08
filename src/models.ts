@@ -6,7 +6,7 @@ import type { ProviderModelConfig } from "@earendil-works/pi-coding-agent";
 import { ANON_KEY, getModelsUrl } from "./constants.js";
 
 const DEFAULT_CONTEXT_WINDOW = 1_000_000;
-const DEFAULT_MAX_TOKENS = 16_384;
+const DEFAULT_MAX_TOKENS = 8_192;
 
 const KNOWN_MODEL_METADATA: Record<
   string,
@@ -47,8 +47,11 @@ export const STATIC_MODELS: ProviderModelConfig[] = Object.entries(
   contextWindow: DEFAULT_CONTEXT_WINDOW,
   maxTokens: DEFAULT_MAX_TOKENS,
   compat: {
+    supportsDeveloperRole: false,
+    supportsStore: false,
+    supportsReasoningEffort: false,
+    maxTokensField: "max_tokens",
     thinkingFormat: "deepseek",
-    supportsReasoningEffort: true,
   },
 }));
 
@@ -90,8 +93,11 @@ export function toProviderModelConfig(
     contextWindow: DEFAULT_CONTEXT_WINDOW,
     maxTokens: DEFAULT_MAX_TOKENS,
     compat: {
+      supportsDeveloperRole: false,
+      supportsStore: false,
+      supportsReasoningEffort: false,
+      maxTokensField: "max_tokens",
       thinkingFormat: "deepseek",
-      supportsReasoningEffort: true,
     },
   };
 }

@@ -1,12 +1,19 @@
 {
   "name": "pi-alysis",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Alysis Code Pro provider, OAuth device login, dynamic /models catalog, and live usage tracking for Pi",
   "keywords": [
     "pi-package",
+    "pi-extension",
     "pi-provider",
+    "pi",
+    "extension",
+    "coding-agent",
     "alysis",
-    "deepseek"
+    "deepseek",
+    "oauth",
+    "ai",
+    "llm"
   ],
   "main": "dist/index.js",
   "module": "dist/index.js",
