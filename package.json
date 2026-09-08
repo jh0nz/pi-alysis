@@ -1,0 +1,50 @@
+{
+  "name": "pi-alysis",
+  "version": "1.0.0",
+  "description": "Alysis Code Pro provider, OAuth device login, dynamic /models catalog, and live usage tracking for Pi",
+  "keywords": [
+    "pi-package",
+    "pi-provider",
+    "alysis",
+    "deepseek"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node && tsc --emitDeclarationOnly"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.2"
+  },
+  "license": "MIT",
+  "author": "jh0nz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jh0nz/pi-alysis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jh0nz/pi-alysis/issues"
+  },
+  "homepage": "https://github.com/jh0nz/pi-alysis#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}
